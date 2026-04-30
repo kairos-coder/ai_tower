@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tower Loop v0.0.1</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --tower: #2d2d44;
+            --floor: #4a4a6a;
+            --elevator: #ff6b6b;
+            --gold: #ffd93d;
+            --text: #e0e0e0;
+            --accent: #6bcb77;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: var(--text);
+        }
+
+        .game-container {
+            display: flex;
+            gap: 2rem;
+            align-items: flex-start;
+            padding: 2rem;
+        }
+
+        .tower-panel {
+            position: relative;
+            background: #0f0f1a;
+            border: 2px solid #3d3d5c;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .ui-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            min-width: 220px;
+        }
+
+        .stat-card {
+            background: #16213e;
+            border: 1px solid #3d3d5c;
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #8888aa;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--gold);
+        }
+
+        .btn {
+            background: var(--accent);
+            color: #1a1a2e;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.1s;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(107, 203, 119, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background: #555;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .floor-log {
+            background: #16213e;
+            border: 1px solid #3d3d5c;
+            border-radius: 8px;
+            padding: 0.75rem;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 0.8rem;
+            color: #aaa;
+        }
+
+        .floor-log .entry {
+            padding: 0.25rem 0;
+            border-bottom: 1px solid #2a2a4a;
+        }
+
+        .floor-log .entry:last-child {
+            border-bottom: none;
+        }
+
+        .tenant-count {
+            font-size: 0.7rem;
+            color: #8888aa;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="tower-panel">
+            <canvas id="towerCanvas"></canvas>
+        </div>
+        <div class="ui-panel">
+            <div class="stat-card">
+                <div class="stat-label">💰 Tower Funds</div>
+                <div class="stat-value" id="moneyDisplay">$0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">🏢 Floors</div>
+                <div class="stat-value" id="floorCount">0</div>
+                <div class="tenant-count" id="tenantCount">0 tenants</div>
+            </div>
+            <button class="btn" id="buildBtn" onclick="buildFloor()">
+                🔨 Build Floor ($50)
+            </button>
+            <div class="floor-log" id="log">
+                <div class="entry" style="color:#6bcb77;">▶ Tower initialized</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ──────────────────────────────────────
+        // TOWER SIMULATION — v0.0.1
+        // Core Loop: Build → Populate → Earn → Expand
+        // ──────────────────────────────────────
+
+        const canvas = document.getElementById('towerCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Canvas sizing
+        const TOWER_WIDTH = 200;
+        const FLOOR_HEIGHT = 40;
+        const GROUND_Y_OFFSET = 60;
+        const MAX_VISIBLE_FLOORS = 8;
+        canvas.width = TOWER_WIDTH;
+        canvas.height = 500;
+
+        // ── GAME STATE ──────────────────────
+        let money = 100;
+        let floors = [];
+        let tickTimer = 0;
+        const TICK_INTERVAL = 1.0; // seconds between income ticks
+        const FLOOR_COST = 50;
+        const INCOME_PER_TENANT = 2;
+        const TENANTS_PER_FLOOR = 3;
+        let elevatorY = 0; // 0 = ground, 1 = floor 1, etc.
+        let elevatorDirection = 1;
+        let elevatorSpeed = 0.8; // floors per second
+        let lastTime = performance.now();
+
+        // ── EVENT LOG ──────────────────────
+        const logEntries = [];
+        const MAX_LOG_ENTRIES = 20;
+
+        function addLog(msg, color = '#aaa') {
+            logEntries.unshift({ msg, color });
+            if (logEntries.length > MAX_LOG_ENTRIES) logEntries.pop();
+            renderLog();
+        }
+
+        function renderLog() {
+            const logEl = document.getElementById('log');
+            logEl.innerHTML = logEntries
+                .map(e => `<div class="entry" style="color:${e.color};">${e.msg}</div>`)
+                .join('');
+        }
+
+        // ── BUILD FLOOR ────────────────────
+        function buildFloor() {
+            if (money < FLOOR_COST) {
+                addLog('❌ Not enough funds!', '#ff6b6b');
+                return;
+            }
+
+            money -= FLOOR_COST;
+            const floorNum = floors.length + 1;
+            const tenants = TENANTS_PER_FLOOR;
+
+            floors.push({
+                id: floorNum,
+                tenants: tenants,
+                income: tenants * INCOME_PER_TENANT,
+            });
+
+            addLog(`🏗️ Floor ${floorNum} built — ${tenants} tenants moved in`, '#6bcb77');
+            updateUI();
+        }
+
+        // ── SIMULATION TICK ────────────────
+        function simulationTick(deltaSeconds) {
+            tickTimer += deltaSeconds;
+
+            if (tickTimer >= TICK_INTERVAL) {
+                tickTimer -= TICK_INTERVAL;
+
+                // Generate income from all floors
+                let totalIncome = 0;
+                for (const floor of floors) {
+                    totalIncome += floor.income;
+                }
+
+                if (totalIncome > 0) {
+                    money += totalIncome;
+                    addLog(`💵 +$${totalIncome} from ${floors.length} floor(s)`, '#ffd93d');
+                }
+            }
+
+            // Move elevator
+            if (floors.length > 0) {
+                const maxFloor = floors.length;
+                elevatorY += elevatorDirection * elevatorSpeed * deltaSeconds;
+
+                // Bounce at top and bottom
+                if (elevatorY >= maxFloor) {
+                    elevatorY = maxFloor;
+                    elevatorDirection = -1;
+                } else if (elevatorY <= 0) {
+                    elevatorY = 0;
+                    elevatorDirection = 1;
+                }
+            } else {
+                elevatorY = 0;
+            }
+        }
+
+        // ── RENDER ─────────────────────────
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Background
+            ctx.fillStyle = '#0f0f1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Calculate visible floor range (tower scrolls if > MAX_VISIBLE_FLOORS)
+            const totalFloors = Math.max(floors.length, 1); // at least show ground
+            const visibleFloors = Math.min(totalFloors, MAX_VISIBLE_FLOORS);
+            const startFloor = Math.max(0, totalFloors - MAX_VISIBLE_FLOORS);
+
+            // Floor height in canvas pixels
+            const floorSlotHeight = (canvas.height - GROUND_Y_OFFSET - 20) / MAX_VISIBLE_FLOORS;
+
+            // Ground line
+            const groundY = canvas.height - 20;
+            ctx.strokeStyle = '#5a5a7a';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(30, groundY);
+            ctx.lineTo(TOWER_WIDTH - 30, groundY);
+            ctx.stroke();
+
+            // Draw floors from bottom up
+            for (let i = 0; i < visibleFloors; i++) {
+                const floorIndex = startFloor + i;
+                const floorY = groundY - (i + 1) * floorSlotHeight;
+                const x = 50;
+                const w = TOWER_WIDTH - 100;
+
+                if (floorIndex < floors.length) {
+                    // Built floor
+                    const floor = floors[floorIndex];
+                    ctx.fillStyle = '#4a4a6a';
+                    ctx.fillRect(x, floorY, w, floorSlotHeight - 2);
+
+                    // Floor number
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = 'bold 12px "Segoe UI", sans-serif';
+                    ctx.fillText(`F${floor.id}`, x + 8, floorY + floorSlotHeight / 2 + 4);
+
+                    // Tenant dots
+                    for (let t = 0; t < floor.tenants; t++) {
+                        ctx.fillStyle = '#ffd93d';
+                        ctx.beginPath();
+                        ctx.arc(x + 25 + t * 14, floorY + floorSlotHeight / 2, 4, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+
+                    // Income indicator
+                    ctx.fillStyle = '#6bcb77';
+                    ctx.font = '10px "Segoe UI", sans-serif';
+                    ctx.fillText(`+$${floor.income}/s`, x + w - 50, floorY + floorSlotHeight / 2 + 4);
+
+                } else if (floorIndex === floors.length) {
+                    // Next available slot — show ghost
+                    ctx.fillStyle = 'rgba(74, 74, 106, 0.3)';
+                    ctx.fillRect(x, floorY, w, floorSlotHeight - 2);
+                    ctx.strokeStyle = 'rgba(107, 203, 119, 0.4)';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([4, 4]);
+                    ctx.strokeRect(x, floorY, w, floorSlotHeight - 2);
+                    ctx.setLineDash([]);
+
+                    ctx.fillStyle = '#6bcb77';
+                    ctx.font = '10px "Segoe UI", sans-serif';
+                    ctx.fillText('available', x + 8, floorY + floorSlotHeight / 2 + 4);
+                } else {
+                    // Empty sky
+                    ctx.fillStyle = 'rgba(30, 30, 50, 0.5)';
+                    ctx.fillRect(x, floorY, w, floorSlotHeight - 2);
+                }
+            }
+
+            // ── ELEVATOR ────────────────────
+            const elevatorWidth = 30;
+            const elevatorX = TOWER_WIDTH / 2 - elevatorWidth / 2;
+            const elevatorCanvasY = groundY - (elevatorY + 1) * floorSlotHeight + floorSlotHeight / 2;
+
+            // Elevator shaft
+            ctx.strokeStyle = '#3d3d5c';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([2, 4]);
+            ctx.beginPath();
+            ctx.moveTo(elevatorX + elevatorWidth / 2, groundY);
+            ctx.lineTo(elevatorX + elevatorWidth / 2, groundY - visibleFloors * floorSlotHeight - 10);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Elevator car
+            const carY = Math.max(groundY - visibleFloors * floorSlotHeight - 10, Math.min(groundY, elevatorCanvasY));
+            ctx.fillStyle = '#ff6b6b';
+            ctx.fillRect(elevatorX, carY - 12, elevatorWidth, 18);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '8px "Segoe UI", sans-serif';
+            ctx.fillText('↕', elevatorX + 10, carY);
+
+            // ── TOWER LABEL ──────────────────
+            ctx.fillStyle = '#8888aa';
+            ctx.font = '11px "Segoe UI", sans-serif';
+            ctx.fillText('TOWER', TOWER_WIDTH / 2 - 22, 18);
+        }
+
+        // ── UPDATE UI ──────────────────────
+        function updateUI() {
+            document.getElementById('moneyDisplay').textContent = `$${Math.floor(money)}`;
+            document.getElementById('floorCount').textContent = floors.length;
+            const totalTenants = floors.reduce((sum, f) => sum + f.tenants, 0);
+            document.getElementById('tenantCount').textContent = `${totalTenants} tenant${totalTenants !== 1 ? 's' : ''}`;
+
+            const btn = document.getElementById('buildBtn');
+            if (money < FLOOR_COST) {
+                btn.disabled = true;
+                btn.textContent = `🔨 Need $${FLOOR_COST - Math.floor(money)} more`;
+            } else {
+                btn.disabled = false;
+                btn.textContent = `🔨 Build Floor ($${FLOOR_COST})`;
+            }
+        }
+
+        // ── GAME LOOP ──────────────────────
+        function gameLoop(timestamp) {
+            const deltaSeconds = Math.min((timestamp - lastTime) / 1000, 0.1); // cap delta
+            lastTime = timestamp;
+
+            simulationTick(deltaSeconds);
+            updateUI();
+            render();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // ── INIT ───────────────────────────
+        function init() {
+            addLog('🏢 Tower simulation online', '#6bcb77');
+            addLog('Click "Build Floor" to start!', '#ffd93d');
+            updateUI();
+            lastTime = performance.now();
+            requestAnimationFrame(gameLoop);
+        }
+
+        init();
+    </script>
+</body>
+</html>
