@@ -1,0 +1,282 @@
+<!-- ════════════════════════════════════════ -->
+<!-- index.html — UI shell + game loop        -->
+<!-- ════════════════════════════════════════ -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tower Forge v0.3 — Entity Architecture</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --surface: #16213e;
+            --border: #3d3d5c;
+            --gold: #ffd93d;
+            --text: #e0e0e0;
+            --accent: #6bcb77;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: var(--bg);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: var(--text);
+            user-select: none;
+        }
+        .game-container {
+            display: flex;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            align-items: flex-start;
+        }
+        .canvas-wrapper {
+            background: #0a0a14;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        canvas { display: block; cursor: crosshair; }
+        .ui-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            min-width: 240px;
+            max-width: 260px;
+        }
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+        }
+        .stat-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #8888aa;
+            margin-bottom: 0.2rem;
+        }
+        .stat-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--gold);
+        }
+        .tool-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.75rem;
+        }
+        .tool-section h3 {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #8888aa;
+            margin-bottom: 0.5rem;
+        }
+        .tool-btn {
+            display: block;
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            margin-bottom: 0.35rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: #1e2d4a;
+            color: var(--text);
+            cursor: pointer;
+            font-size: 0.85rem;
+            text-align: left;
+            transition: all 0.15s;
+        }
+        .tool-btn:hover { background: #2a3d5c; border-color: #5a7a9a; }
+        .tool-btn.active {
+            background: #2a4a3a;
+            border-color: var(--accent);
+            box-shadow: 0 0 8px rgba(107, 203, 119, 0.3);
+            font-weight: 600;
+        }
+        .tool-btn .cost { float: right; color: var(--gold); font-size: 0.75rem; }
+        .room-legend {
+            display: flex; gap: 0.5rem; flex-wrap: wrap; font-size: 0.7rem;
+        }
+        .legend-item { display: flex; align-items: center; gap: 0.25rem; }
+        .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+        .log-box {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.5rem 0.75rem;
+            max-height: 160px;
+            overflow-y: auto;
+            font-size: 0.72rem;
+            color: #aaa;
+            line-height: 1.4;
+        }
+        .log-entry {
+            padding: 0.15rem 0;
+            border-bottom: 1px solid #1a1a30;
+        }
+        .log-entry:last-child { border-bottom: none; }
+        .instructions { font-size: 0.7rem; color: #666; margin-top: 0.5rem; }
+        .instructions kbd {
+            background: #2a2a4a;
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-size: 0.65rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="canvas-wrapper">
+            <canvas id="towerCanvas"></canvas>
+        </div>
+        <div class="ui-panel">
+            <div class="stat-card">
+                <div class="stat-label">💰 Funds</div>
+                <div class="stat-value" id="moneyDisplay">$0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">📊 Income / 10s</div>
+                <div class="stat-value" id="incomeDisplay">$0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">🧑‍🤝‍🧑 Population</div>
+                <div class="stat-value" id="popDisplay">0</div>
+            </div>
+
+            <div class="tool-section">
+                <h3>🔧 Build Tool</h3>
+                <button class="tool-btn active" data-tool="residential" onclick="selectTool('residential')">
+                    🏠 Residential <span class="cost">$40</span>
+                </button>
+                <button class="tool-btn" data-tool="commercial" onclick="selectTool('commercial')">
+                    🏪 Commercial <span class="cost">$60</span>
+                </button>
+                <button class="tool-btn" data-tool="utility" onclick="selectTool('utility')">
+                    ⚡ Utility <span class="cost">$30</span>
+                </button>
+                <button class="tool-btn" data-tool="elevator" onclick="selectTool('elevator')">
+                    ↕ Elevator <span class="cost">$100</span>
+                </button>
+                <button class="tool-btn" data-tool="demolish" onclick="selectTool('demolish')">
+                    💣 Demolish <span class="cost">free</span>
+                </button>
+                <div class="instructions">
+                    <kbd>Click</kbd> grid to place<br>
+                    <span style="color:#6bcb77;">●</span> Happy &nbsp;
+                    <span style="color:#ffd93d;">●</span> Neutral &nbsp;
+                    <span style="color:#ff6b6b;">●</span> Unhappy
+                </div>
+            </div>
+
+            <div class="room-legend">
+                <span class="legend-item"><span class="legend-dot" style="background:#e8a87c;"></span> Res</span>
+                <span class="legend-item"><span class="legend-dot" style="background:#85cdca;"></span> Com</span>
+                <span class="legend-item"><span class="legend-dot" style="background:#c38d9e;"></span> Util</span>
+                <span class="legend-item"><span class="legend-dot" style="background:#ff6b6b;"></span> Elev</span>
+            </div>
+
+            <div class="log-box" id="logBox">
+                <div class="log-entry" style="color:#6bcb77;">▶ Tower Forge v0.3 online</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Architecture: world.js → sim.js → render.js -->
+    <script src="world.js"></script>
+    <script src="sim.js"></script>
+    <script src="render.js"></script>
+
+    <script>
+        // ═══════════════════════════════════════
+        // main.js — Game loop, UI binding, init
+        // ═══════════════════════════════════════
+
+        let selectedTool = 'residential';
+        let lastTime = performance.now();
+
+        // ── Tool Selection ────────────────────
+        function selectTool(tool) {
+            selectedTool = tool;
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector(`[data-tool="${tool}"]`)?.classList.add('active');
+        }
+
+        // ── Canvas Click Handler ──────────────
+        function handleCanvasClick(e) {
+            const rect = RENDER.canvas.getBoundingClientRect();
+            const px = e.clientX - rect.left;
+            const py = e.clientY - rect.top;
+            const col = Math.floor(px / RENDER.cellSize);
+            const row = Math.floor(py / RENDER.cellSize);
+
+            if (row < 0 || row >= WORLD.rows || col < 0 || col >= WORLD.cols) return;
+
+            if (selectedTool === 'demolish') {
+                SIM.demolish(WORLD, row, col);
+            } else {
+                SIM.placeEntity(WORLD, selectedTool, row, col);
+            }
+        }
+
+        // ── UI Update ─────────────────────────
+        function updateUI() {
+            document.getElementById('moneyDisplay').textContent = `$${Math.floor(WORLD.money)}`;
+            document.getElementById('incomeDisplay').textContent = `$${SIM.calculateIncome(WORLD)}`;
+
+            // Population count
+            const residentials = WORLD.getAllEntitiesOfType('residential');
+            const totalPop = residentials.reduce((sum, e) => sum + (e.occupants || 0), 0);
+            document.getElementById('popDisplay').textContent = totalPop;
+
+            // Log display
+            const logBox = document.getElementById('logBox');
+            logBox.innerHTML = WORLD.log.map(entry =>
+                `<div class="log-entry" style="color:${entry.color};">${entry.message}</div>`
+            ).join('');
+            logBox.scrollTop = 0;
+        }
+
+        // ── Game Loop ─────────────────────────
+        function gameLoop(timestamp) {
+            const delta = Math.min((timestamp - lastTime) / 1000, 0.2);
+            lastTime = timestamp;
+
+            SIM.tick(WORLD, delta);
+            RENDER.render(WORLD);
+            updateUI();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // ── Initialize ────────────────────────
+        function init() {
+            WORLD.init();
+            RENDER.init('towerCanvas');
+
+            // Place starter elevator + rooms
+            const startCol = Math.floor(WORLD.cols / 2);
+            SIM.placeEntity(WORLD, 'elevator', WORLD.groundRow - 2, startCol);
+            SIM.placeEntity(WORLD, 'residential', WORLD.groundRow - 1, startCol - 1);
+            SIM.placeEntity(WORLD, 'commercial', WORLD.groundRow - 1, startCol + 1);
+
+            WORLD.addLog('🏗️ Tower Forge ready. Build adjacent to existing rooms!', '#6bcb77');
+            WORLD.addLog('💡 Happiness shown as colored dots on rooms', '#4ec9e0');
+
+            // Event binding
+            RENDER.canvas.addEventListener('click', handleCanvasClick);
+
+            updateUI();
+            lastTime = performance.now();
+            requestAnimationFrame(gameLoop);
+        }
+
+        init();
+    </script>
+</body>
+</html>
