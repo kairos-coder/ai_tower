@@ -1,6 +1,3 @@
-<!-- ════════════════════════════════════════ -->
-<!-- index.html — UI shell + game loop        -->
-<!-- ════════════════════════════════════════ -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -15,6 +12,8 @@
             --gold: #ffd93d;
             --text: #e0e0e0;
             --accent: #6bcb77;
+            --danger: #ff6b6b;
+            --info: #4ec9e0;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -99,18 +98,42 @@
             box-shadow: 0 0 8px rgba(107, 203, 119, 0.3);
             font-weight: 600;
         }
-        .tool-btn .cost { float: right; color: var(--gold); font-size: 0.75rem; }
-        .room-legend {
-            display: flex; gap: 0.5rem; flex-wrap: wrap; font-size: 0.7rem;
+        .tool-btn .cost {
+            float: right;
+            color: var(--gold);
+            font-size: 0.75rem;
         }
-        .legend-item { display: flex; align-items: center; gap: 0.25rem; }
-        .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+        .tool-btn .key-hint {
+            float: right;
+            color: #666;
+            font-size: 0.65rem;
+            margin-right: 0.5rem;
+            background: #1a1a30;
+            padding: 0 4px;
+            border-radius: 3px;
+        }
+        .room-legend {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            font-size: 0.7rem;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+        }
         .log-box {
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: 8px;
             padding: 0.5rem 0.75rem;
-            max-height: 160px;
+            max-height: 180px;
             overflow-y: auto;
             font-size: 0.72rem;
             color: #aaa;
@@ -121,13 +144,6 @@
             border-bottom: 1px solid #1a1a30;
         }
         .log-entry:last-child { border-bottom: none; }
-        .instructions { font-size: 0.7rem; color: #666; margin-top: 0.5rem; }
-        .instructions kbd {
-            background: #2a2a4a;
-            padding: 1px 5px;
-            border-radius: 3px;
-            font-size: 0.65rem;
-        }
     </style>
 </head>
 <body>
@@ -151,27 +167,21 @@
 
             <div class="tool-section">
                 <h3>🔧 Build Tool</h3>
-                <button class="tool-btn active" data-tool="residential" onclick="selectTool('residential')">
-                    🏠 Residential <span class="cost">$40</span>
+                <button class="tool-btn active" data-tool="residential">
+                    🏠 Residential <span class="key-hint">1</span><span class="cost">$40</span>
                 </button>
-                <button class="tool-btn" data-tool="commercial" onclick="selectTool('commercial')">
-                    🏪 Commercial <span class="cost">$60</span>
+                <button class="tool-btn" data-tool="commercial">
+                    🏪 Commercial <span class="key-hint">2</span><span class="cost">$60</span>
                 </button>
-                <button class="tool-btn" data-tool="utility" onclick="selectTool('utility')">
-                    ⚡ Utility <span class="cost">$30</span>
+                <button class="tool-btn" data-tool="utility">
+                    ⚡ Utility <span class="key-hint">3</span><span class="cost">$30</span>
                 </button>
-                <button class="tool-btn" data-tool="elevator" onclick="selectTool('elevator')">
-                    ↕ Elevator <span class="cost">$100</span>
+                <button class="tool-btn" data-tool="elevator">
+                    ↕ Elevator <span class="key-hint">4</span><span class="cost">$100</span>
                 </button>
-                <button class="tool-btn" data-tool="demolish" onclick="selectTool('demolish')">
-                    💣 Demolish <span class="cost">free</span>
+                <button class="tool-btn" data-tool="demolish">
+                    💣 Demolish <span class="key-hint">0</span><span class="cost">free</span>
                 </button>
-                <div class="instructions">
-                    <kbd>Click</kbd> grid to place<br>
-                    <span style="color:#6bcb77;">●</span> Happy &nbsp;
-                    <span style="color:#ffd93d;">●</span> Neutral &nbsp;
-                    <span style="color:#ff6b6b;">●</span> Unhappy
-                </div>
             </div>
 
             <div class="room-legend">
@@ -179,104 +189,51 @@
                 <span class="legend-item"><span class="legend-dot" style="background:#85cdca;"></span> Com</span>
                 <span class="legend-item"><span class="legend-dot" style="background:#c38d9e;"></span> Util</span>
                 <span class="legend-item"><span class="legend-dot" style="background:#ff6b6b;"></span> Elev</span>
+                <span style="font-size:0.65rem;color:#888;margin-top:0.25rem;">
+                    ● happy &nbsp; ● neutral &nbsp; ● unhappy
+                </span>
             </div>
 
             <div class="log-box" id="logBox">
-                <div class="log-entry" style="color:#6bcb77;">▶ Tower Forge v0.3 online</div>
+                <div class="log-entry" style="color:#6bcb77;">▶ Loading Tower Forge...</div>
             </div>
         </div>
     </div>
 
-    <!-- Architecture: world.js → sim.js → render.js -->
-    <script src="world.js"></script>
-    <script src="sim.js"></script>
-    <script src="render.js"></script>
+    <!-- ═══════════════════════════════════════ -->
+    <!-- LOAD ORDER MATTERS — dependencies first -->
+    <!-- ═══════════════════════════════════════ -->
 
-    <script>
-        // ═══════════════════════════════════════
-        // main.js — Game loop, UI binding, init
-        // ═══════════════════════════════════════
+    <!-- 1. Configuration (no dependencies) -->
+    <script src="src/config.js"></script>
 
-        let selectedTool = 'residential';
-        let lastTime = performance.now();
+    <!-- 2. Entities (depend on config) -->
+    <script src="entities/Floor.js"></script>
+    <script src="entities/Elevator.js"></script>
+    <script src="entities/Resident.js"></script>
 
-        // ── Tool Selection ────────────────────
-        function selectTool(tool) {
-            selectedTool = tool;
-            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
-            document.querySelector(`[data-tool="${tool}"]`)?.classList.add('active');
-        }
+    <!-- 3. World state (depends on entities) -->
+    <script src="src/world.js"></script>
 
-        // ── Canvas Click Handler ──────────────
-        function handleCanvasClick(e) {
-            const rect = RENDER.canvas.getBoundingClientRect();
-            const px = e.clientX - rect.left;
-            const py = e.clientY - rect.top;
-            const col = Math.floor(px / RENDER.cellSize);
-            const row = Math.floor(py / RENDER.cellSize);
+    <!-- 4. Systems (depend on world + entities) -->
+    <script src="systems/economy.js"></script>
+    <script src="systems/elevatorSystem.js"></script>
+    <script src="systems/happiness.js"></script>
 
-            if (row < 0 || row >= WORLD.rows || col < 0 || col >= WORLD.cols) return;
+    <!-- 5. Simulation orchestrator (depends on systems) -->
+    <script src="src/sim.js"></script>
 
-            if (selectedTool === 'demolish') {
-                SIM.demolish(WORLD, row, col);
-            } else {
-                SIM.placeEntity(WORLD, selectedTool, row, col);
-            }
-        }
+    <!-- 6. Rendering (reads world, depends on Floor/Happiness colors) -->
+    <script src="src/render.js"></script>
 
-        // ── UI Update ─────────────────────────
-        function updateUI() {
-            document.getElementById('moneyDisplay').textContent = `$${Math.floor(WORLD.money)}`;
-            document.getElementById('incomeDisplay').textContent = `$${SIM.calculateIncome(WORLD)}`;
+    <!-- 7. Input (depends on canvas) -->
+    <script src="src/input.js"></script>
 
-            // Population count
-            const residentials = WORLD.getAllEntitiesOfType('residential');
-            const totalPop = residentials.reduce((sum, e) => sum + (e.occupants || 0), 0);
-            document.getElementById('popDisplay').textContent = totalPop;
+    <!-- 8. UI (depends on DOM + input + economy) -->
+    <script src="ui/hud.js"></script>
+    <script src="ui/log.js"></script>
 
-            // Log display
-            const logBox = document.getElementById('logBox');
-            logBox.innerHTML = WORLD.log.map(entry =>
-                `<div class="log-entry" style="color:${entry.color};">${entry.message}</div>`
-            ).join('');
-            logBox.scrollTop = 0;
-        }
-
-        // ── Game Loop ─────────────────────────
-        function gameLoop(timestamp) {
-            const delta = Math.min((timestamp - lastTime) / 1000, 0.2);
-            lastTime = timestamp;
-
-            SIM.tick(WORLD, delta);
-            RENDER.render(WORLD);
-            updateUI();
-
-            requestAnimationFrame(gameLoop);
-        }
-
-        // ── Initialize ────────────────────────
-        function init() {
-            WORLD.init();
-            RENDER.init('towerCanvas');
-
-            // Place starter elevator + rooms
-            const startCol = Math.floor(WORLD.cols / 2);
-            SIM.placeEntity(WORLD, 'elevator', WORLD.groundRow - 2, startCol);
-            SIM.placeEntity(WORLD, 'residential', WORLD.groundRow - 1, startCol - 1);
-            SIM.placeEntity(WORLD, 'commercial', WORLD.groundRow - 1, startCol + 1);
-
-            WORLD.addLog('🏗️ Tower Forge ready. Build adjacent to existing rooms!', '#6bcb77');
-            WORLD.addLog('💡 Happiness shown as colored dots on rooms', '#4ec9e0');
-
-            // Event binding
-            RENDER.canvas.addEventListener('click', handleCanvasClick);
-
-            updateUI();
-            lastTime = performance.now();
-            requestAnimationFrame(gameLoop);
-        }
-
-        init();
-    </script>
+    <!-- 9. Bootstrap (wires everything) -->
+    <script src="main.js"></script>
 </body>
 </html>
