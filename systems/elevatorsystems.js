@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════
-// elevatorSystem.js — Elevator movement, shaft management
+// elevatorsystem.js — Elevator movement, shaft management
 // ═══════════════════════════════════════════
 
 const ElevatorSystem = {
