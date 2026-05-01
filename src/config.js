@@ -97,3 +97,4 @@ const CONFIG = {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = CONFIG;
 }
+window.CONFIG = CONFIG;
