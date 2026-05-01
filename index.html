@@ -201,39 +201,41 @@
     </div>
 
     <!-- ═══════════════════════════════════════ -->
-    <!-- LOAD ORDER MATTERS — dependencies first -->
+    <!-- CRITICAL: Load order is dependency order -->
+    <!-- If A depends on B, B must load first     -->
     <!-- ═══════════════════════════════════════ -->
 
-    <!-- 1. Configuration (no dependencies) -->
+    <!-- Layer 0: Configuration (no dependencies) -->
     <script src="src/config.js"></script>
 
-    <!-- 2. Entities (depend on config) -->
+    <!-- Layer 1: Entity definitions (depend on config) -->
     <script src="entities/Floor.js"></script>
     <script src="entities/Elevator.js"></script>
     <script src="entities/Resident.js"></script>
 
-    <!-- 3. World state (depends on entities) -->
+    <!-- Layer 2: World state (depends on entities + config) -->
     <script src="src/world.js"></script>
 
-    <!-- 4. Systems (depend on world + entities) -->
+    <!-- Layer 3: Systems (depend on world + entities + config) -->
+    <!-- These must load before sim.js because sim.js calls them -->
     <script src="systems/economy.js"></script>
     <script src="systems/elevatorSystem.js"></script>
     <script src="systems/happiness.js"></script>
 
-    <!-- 5. Simulation orchestrator (depends on systems) -->
+    <!-- Layer 4: Simulation orchestrator (depends on all systems) -->
     <script src="src/sim.js"></script>
 
-    <!-- 6. Rendering (reads world, depends on Floor/Happiness colors) -->
+    <!-- Layer 5: Rendering (reads world state) -->
     <script src="src/render.js"></script>
 
-    <!-- 7. Input (depends on canvas) -->
+    <!-- Layer 6: Input handling -->
     <script src="src/input.js"></script>
 
-    <!-- 8. UI (depends on DOM + input + economy) -->
+    <!-- Layer 7: UI components -->
     <script src="ui/hud.js"></script>
     <script src="ui/log.js"></script>
 
-    <!-- 9. Bootstrap (wires everything) -->
+    <!-- Layer 8: Game bootstrap (wires everything together) -->
     <script src="main.js"></script>
 </body>
 </html>
