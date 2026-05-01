@@ -262,3 +262,4 @@ const WORLD = {
             .map(k => parseInt(k.split('_')[1]) || 0)) + 1;
     },
 };
+window.WORLD = WORLD;
