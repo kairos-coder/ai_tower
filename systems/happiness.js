@@ -86,3 +86,4 @@ const Happiness = {
         return emojis[mood] || '😐';
     },
 };
+window.Happiness = Happiness;
