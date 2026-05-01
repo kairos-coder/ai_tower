@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════
-// Resident.js — Resident entity (agent-like)
+// resident.js — Resident entity (agent-like)
 // This is the hook point for future AI content
 // ═══════════════════════════════════════════
 
