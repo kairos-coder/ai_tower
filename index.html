@@ -201,59 +201,61 @@
     </div>
 
     <!-- ═══════════════════════════════════════ -->
-    <!-- HARDCODED PATHS FOR GITHUB PAGES       -->
+    <!-- SCRIPTS — with defer for proper ordering -->
     <!-- ═══════════════════════════════════════ -->
 
     <!-- Layer 0: Configuration -->
-    <script src="/ai_tower/src/config.js"></script>
+    <script defer src="/ai_tower/src/config.js"></script>
 
     <!-- Layer 1: Entity factories -->
-    <script src="/ai_tower/entities/floor.js"></script>
-    <script src="/ai_tower/entities/elevator.js"></script>
-    <script src="/ai_tower/entities/resident.js"></script>
+    <script defer src="/ai_tower/entities/floor.js"></script>
+    <script defer src="/ai_tower/entities/elevator.js"></script>
+    <script defer src="/ai_tower/entities/resident.js"></script>
 
     <!-- Layer 2: World state -->
-    <script src="/ai_tower/src/world.js"></script>
+    <script defer src="/ai_tower/src/world.js"></script>
 
     <!-- Layer 3: Systems -->
-    <script src="/ai_tower/systems/economy.js"></script>
-    <script src="/ai_tower/systems/elevatorsystems.js"></script>
-    <script src="/ai_tower/systems/happiness.js"></script>
+    <script defer src="/ai_tower/systems/economy.js"></script>
+    <script defer src="/ai_tower/systems/elevatorsystems.js"></script>
+    <script defer src="/ai_tower/systems/happiness.js"></script>
 
     <!-- Layer 4: Simulation -->
-    <script src="/ai_tower/src/sim.js"></script>
+    <script defer src="/ai_tower/src/sim.js"></script>
 
     <!-- Layer 5: Rendering -->
-    <script src="/ai_tower/src/render.js"></script>
+    <script defer src="/ai_tower/src/render.js"></script>
 
     <!-- Layer 6: Input -->
-    <script src="/ai_tower/src/input.js"></script>
+    <script defer src="/ai_tower/src/input.js"></script>
 
     <!-- Layer 7: UI -->
-    <script src="/ai_tower/ui/hud.js"></script>
-    <script src="/ai_tower/ui/log.js"></script>
+    <script defer src="/ai_tower/ui/hud.js"></script>
+    <script defer src="/ai_tower/ui/log.js"></script>
 
     <!-- Layer 8: Bootstrap -->
-    <script src="/ai_tower/main.js"></script>
+    <script defer src="/ai_tower/main.js"></script>
 
-    <!-- Verification -->
+    <!-- Verification (runs after all deferred scripts execute in order) -->
     <script>
-        console.log('=== TOWER FORGE LOAD CHECK ===');
-        const modules = ['CONFIG', 'Floor', 'Elevator', 'Resident', 'WORLD', 'Economy', 'ElevatorSystem', 'Happiness'];
-        let allGood = true;
-        for (const m of modules) {
-            if (typeof window[m] !== 'undefined') {
-                console.log('  ✅', m);
-            } else {
-                console.error('  ❌', m, '— failed to load');
-                allGood = false;
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('=== TOWER FORGE LOAD CHECK ===');
+            const modules = ['CONFIG', 'Floor', 'Elevator', 'Resident', 'WORLD', 'Economy', 'ElevatorSystem', 'Happiness'];
+            let allGood = true;
+            for (const m of modules) {
+                if (typeof window[m] !== 'undefined') {
+                    console.log('  ✅', m);
+                } else {
+                    console.error('  ❌', m, '— failed to load');
+                    allGood = false;
+                }
             }
-        }
-        if (allGood) {
-            console.log('✅ All modules loaded!');
-        } else {
-            console.error('❌ Some modules failed. Check Network tab in DevTools.');
-        }
+            if (allGood) {
+                console.log('✅ All modules loaded! Start the tower!');
+            } else {
+                console.error('❌ Some modules failed. Check Network tab in DevTools.');
+            }
+        });
     </script>
 </body>
 </html>
