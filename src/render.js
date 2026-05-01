@@ -125,3 +125,4 @@ const RENDER = {
         }
     },
 };
+window.RENDER = RENDER;
