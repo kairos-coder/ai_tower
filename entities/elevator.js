@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════
-// Elevator.js — Elevator system entity
+// elevator.js — Elevator system entity
 // ═══════════════════════════════════════════
 
 const Elevator = {
