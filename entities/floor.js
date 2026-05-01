@@ -107,3 +107,4 @@ const Floor = {
         return type === 'residential' || type === 'commercial';
     },
 };
+window.Floor = Floor;
