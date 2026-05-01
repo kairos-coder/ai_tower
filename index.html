@@ -149,15 +149,18 @@
             display: none;
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.9);
+            background: rgba(0,0,0,0.95);
             color: #ff6b6b;
             font-family: monospace;
             padding: 2rem;
             z-index: 1000;
             overflow-y: auto;
             white-space: pre-wrap;
+            font-size: 14px;
+            line-height: 1.6;
         }
         .error-overlay.visible { display: flex; align-items: center; justify-content: center; }
+        .error-overlay .success { color: #6bcb77; }
     </style>
 </head>
 <body>
@@ -217,28 +220,60 @@
     </div>
 
     <!-- ═══════════════════════════════════════ -->
-    <!-- LOAD ORDER — strict dependency chain    -->
+    <!-- SMART LOADER — adapts to environment    -->
     <!-- ═══════════════════════════════════════ -->
-
-    <!-- Layer 0: Configuration -->
-    <script src="src/config.js"></script>
-
-    <!-- Layer 1: Entity factories -->
-    <script src="entities/floor.js"></script>
-    <script src="entities/elevator.js"></script>
-    <script src="entities/resident.js"></script>
-
-    <!-- Layer 2: World state -->
-    <script src="src/world.js"></script>
-
-    <!-- Layer 3: Systems -->
-    <script src="systems/economy.js"></script>
-    <script src="systems/elevatorsystems.js"></script>
-    <script src="systems/happiness.js"></script>
-
-    <!-- Layer 3.5: Debug verification -->
     <script>
-        (function() {
+    (function() {
+        // Detect environment and set base path
+        const isGitHubPages = window.location.hostname.includes('github.io');
+        const isLocalFile = window.location.protocol === 'file:';
+        const repoName = 'ai_tower';
+        
+        let basePath = '';
+        if (isGitHubPages) {
+            basePath = '/' + repoName;
+        } else if (isLocalFile) {
+            basePath = '.';  // relative paths from file://
+        }
+        
+        console.log('🌍 Environment:', isGitHubPages ? 'GitHub Pages' : isLocalFile ? 'Local file' : 'Local server');
+        console.log('📁 Base path:', basePath || '(root)');
+        
+        // All JS files in dependency order
+        const files = [
+            // Layer 0: Configuration
+            'src/config.js',
+            // Layer 1: Entity factories
+            'entities/floor.js',
+            'entities/elevator.js',
+            'entities/resident.js',
+            // Layer 2: World state
+            'src/world.js',
+            // Layer 3: Systems
+            'systems/economy.js',
+            'systems/elevatorsystems.js',
+            'systems/happiness.js',
+            // Layer 4: Simulation
+            'src/sim.js',
+            // Layer 5: Rendering
+            'src/render.js',
+            // Layer 6: Input
+            'src/input.js',
+            // Layer 7: UI
+            'ui/hud.js',
+            'ui/log.js',
+            // Layer 8: Bootstrap
+            'main.js',
+        ];
+        
+        // Inject script tags
+        for (const file of files) {
+            const path = basePath ? basePath + '/' + file : file;
+            document.write('<script src="' + path + '"><\/script>');
+        }
+        
+        // Verify everything loaded
+        window.addEventListener('DOMContentLoaded', function() {
             const required = {
                 'CONFIG': 'src/config.js',
                 'Floor': 'entities/floor.js',
@@ -251,43 +286,39 @@
             };
             
             const missing = [];
+            const loaded = [];
+            
             for (const [name, path] of Object.entries(required)) {
                 if (typeof window[name] === 'undefined') {
-                    missing.push(`  ❌ ${name} — expected from ${path}`);
+                    missing.push('  ❌ ' + name + ' — ' + path);
                 } else {
-                    console.log(`  ✅ ${name} loaded`);
+                    loaded.push('  ✅ ' + name);
                 }
             }
             
+            console.log('=== LOAD RESULTS ===');
+            loaded.forEach(l => console.log(l));
+            missing.forEach(m => console.error(m));
+            
             if (missing.length > 0) {
-                const msg = 'FAILED TO LOAD:\n' + missing.join('\n') + 
-                           '\n\nCheck that these files exist with EXACT names.\n' +
-                           'All filenames are lowercase.\n' +
-                           'elevatorsystems.js (plural "systems")';
-                
-                console.error(msg);
+                const msg = '❌ MODULES FAILED TO LOAD\n\n' +
+                           missing.join('\n') +
+                           '\n\n🔍 Troubleshooting:\n' +
+                           '• Check Network tab in DevTools (F12)\n' +
+                           '• Verify file names match exactly (case-sensitive)\n' +
+                           '• Base path: ' + (basePath || '(root)') + '\n' +
+                           '• URL: ' + window.location.href;
                 
                 const overlay = document.getElementById('errorOverlay');
-                overlay.textContent = msg;
+                overlay.innerHTML = msg.replace(/\n/g, '<br>')
+                    .replace(/❌/g, '<span style="color:#ff6b6b;">❌</span>')
+                    .replace(/✅/g, '<span style="color:#6bcb77;">✅</span>');
                 overlay.classList.add('visible');
+            } else {
+                console.log('✅ All modules loaded successfully!');
             }
-        })();
+        });
+    })();
     </script>
-
-    <!-- Layer 4: Simulation -->
-    <script src="src/sim.js"></script>
-
-    <!-- Layer 5: Rendering -->
-    <script src="src/render.js"></script>
-
-    <!-- Layer 6: Input -->
-    <script src="src/input.js"></script>
-
-    <!-- Layer 7: UI -->
-    <script src="ui/hud.js"></script>
-    <script src="ui/log.js"></script>
-
-    <!-- Layer 8: Bootstrap -->
-    <script src="main.js"></script>
 </body>
 </html>
