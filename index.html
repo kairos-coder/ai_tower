@@ -145,7 +145,6 @@
         }
         .log-entry:last-child { border-bottom: none; }
         
-        /* Error overlay */
         .error-overlay {
             display: none;
             position: fixed;
@@ -162,7 +161,6 @@
     </style>
 </head>
 <body>
-    <!-- Error overlay for load failures -->
     <div id="errorOverlay" class="error-overlay"></div>
 
     <div class="game-container">
@@ -219,24 +217,23 @@
     </div>
 
     <!-- ═══════════════════════════════════════ -->
-    <!-- ALL FILENAMES ARE LOWERCASE            -->
-    <!-- LOAD ORDER IS STRICT DEPENDENCY ORDER  -->
+    <!-- LOAD ORDER — strict dependency chain    -->
     <!-- ═══════════════════════════════════════ -->
 
-    <!-- Layer 0: Configuration (no dependencies) -->
+    <!-- Layer 0: Configuration -->
     <script src="src/config.js"></script>
 
-    <!-- Layer 1: Entity factories (depend on config) -->
+    <!-- Layer 1: Entity factories -->
     <script src="entities/floor.js"></script>
     <script src="entities/elevator.js"></script>
     <script src="entities/resident.js"></script>
 
-    <!-- Layer 2: World state (depends on entities + config) -->
+    <!-- Layer 2: World state -->
     <script src="src/world.js"></script>
 
-    <!-- Layer 3: Systems (depend on world + entities + config) -->
+    <!-- Layer 3: Systems -->
     <script src="systems/economy.js"></script>
-    <script src="systems/elevatorsystem.js"></script>
+    <script src="systems/elevatorsystems.js"></script>
     <script src="systems/happiness.js"></script>
 
     <!-- Layer 3.5: Debug verification -->
@@ -249,7 +246,7 @@
                 'Resident': 'entities/resident.js',
                 'WORLD': 'src/world.js',
                 'Economy': 'systems/economy.js',
-                'ElevatorSystem': 'systems/elevatorsystem.js',
+                'ElevatorSystem': 'systems/elevatorsystems.js',
                 'Happiness': 'systems/happiness.js',
             };
             
@@ -264,58 +261,33 @@
             
             if (missing.length > 0) {
                 const msg = 'FAILED TO LOAD:\n' + missing.join('\n') + 
-                           '\n\nCheck that these files exist and are named correctly.\n' +
-                           'All filenames should be LOWERCASE.\n' +
-                           'Open browser console (F12) for more details.';
+                           '\n\nCheck that these files exist with EXACT names.\n' +
+                           'All filenames are lowercase.\n' +
+                           'elevatorsystems.js (plural "systems")';
                 
                 console.error(msg);
                 
                 const overlay = document.getElementById('errorOverlay');
                 overlay.textContent = msg;
                 overlay.classList.add('visible');
-                
-                // Also create stubs so sim.js doesn't crash
-                if (typeof ElevatorSystem === 'undefined') {
-                    window.ElevatorSystem = {
-                        extendShaft: function() {},
-                        updateAll: function() {},
-                        findNearestElevator: function() { return null; },
-                        getEstimatedWait: function() { return 0; }
-                    };
-                }
-                if (typeof Economy === 'undefined') {
-                    window.Economy = {
-                        calculateIncome: function() { return 0; },
-                        getCost: function() { return 0; },
-                        getUpgradeCost: function() { return 0; }
-                    };
-                }
-                if (typeof Happiness === 'undefined') {
-                    window.Happiness = {
-                        updateAll: function() {},
-                        updateResidentMoods: function() {},
-                        getColor: function() { return '#888'; },
-                        getMoodEmoji: function() { return '😐'; }
-                    };
-                }
             }
         })();
     </script>
 
-    <!-- Layer 4: Simulation orchestrator (depends on all systems) -->
+    <!-- Layer 4: Simulation -->
     <script src="src/sim.js"></script>
 
-    <!-- Layer 5: Rendering (reads world state) -->
+    <!-- Layer 5: Rendering -->
     <script src="src/render.js"></script>
 
-    <!-- Layer 6: Input handling -->
+    <!-- Layer 6: Input -->
     <script src="src/input.js"></script>
 
-    <!-- Layer 7: UI components -->
+    <!-- Layer 7: UI -->
     <script src="ui/hud.js"></script>
     <script src="ui/log.js"></script>
 
-    <!-- Layer 8: Game bootstrap (wires everything together) -->
+    <!-- Layer 8: Bootstrap -->
     <script src="main.js"></script>
 </body>
 </html>
