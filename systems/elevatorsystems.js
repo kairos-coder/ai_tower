@@ -96,3 +96,4 @@ const ElevatorSystem = {
         return shaftLength / elevator.speed; // rough round-trip time in seconds
     },
 };
+window.ElevatorSystem = ElevatorSystem;
