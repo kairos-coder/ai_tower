@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════
-// Floor.js — Entity definition for placed rooms
+// floor.js — Entity definition for placed rooms
 // ═══════════════════════════════════════════
 
 const Floor = {
