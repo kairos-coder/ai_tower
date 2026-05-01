@@ -24,3 +24,4 @@ const Log = {
         this.element.scrollTop = 0;
     },
 };
+window.Log = Log;
