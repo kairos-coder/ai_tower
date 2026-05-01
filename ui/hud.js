@@ -57,3 +57,4 @@ const HUD = {
         });
     },
 };
+window.HUD = HUD;
