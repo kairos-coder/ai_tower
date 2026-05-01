@@ -61,3 +61,4 @@ const Resident = {
         return `${fn} ${ln}`;
     },
 };
+window.Resident = Resident;
