@@ -69,3 +69,4 @@ const INPUT = {
         return { row, col };
     },
 };
+window.INPUT = INPUT;
