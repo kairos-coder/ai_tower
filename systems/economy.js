@@ -52,3 +52,4 @@ const Economy = {
         return Math.floor(baseCost * 1.5 * entity.upgradeLevel);
     },
 };
+window.Economy = Economy;
