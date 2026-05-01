@@ -73,3 +73,4 @@ const GAME = {
 document.addEventListener('DOMContentLoaded', () => {
     GAME.init();
 });
+window.GAME = GAME;
