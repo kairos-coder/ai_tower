@@ -53,3 +53,4 @@ const Elevator = {
         return elevator.cells.has(row);
     },
 };
+window.Elevator = Elevator;
