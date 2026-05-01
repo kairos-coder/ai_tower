@@ -139,3 +139,4 @@ const SIM = {
         }
     },
 };
+window.SIM = SIM;
