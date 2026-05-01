@@ -257,5 +257,60 @@
             }
         });
     </script>
+    <script>
+// ═══════════════════════════════════════════
+// PATCH: Ensure all modules attach to window
+// ═══════════════════════════════════════════
+(function() {
+    // List of module names to check and patch
+    const modules = [
+        'CONFIG',
+        'Floor', 
+        'Elevator',
+        'Resident',
+        'WORLD',
+        'Economy',
+        'ElevatorSystem',
+        'Happiness',
+        'SIM',
+        'RENDER',
+        'INPUT',
+        'HUD',
+        'Log',
+        'GAME'
+    ];
+    
+    // Wait for all scripts to execute
+    window.addEventListener('load', function() {
+        console.log('=== PATCH DIAGNOSTIC ===');
+        
+        for (const name of modules) {
+            // Check both ways - as a global variable and on window
+            try {
+                const exists = eval('typeof ' + name) !== 'undefined';
+                const onWindow = typeof window[name] !== 'undefined';
+                
+                if (exists && !onWindow) {
+                    // It exists as a variable but not on window — attach it
+                    window[name] = eval(name);
+                    console.log('  🔧 Patched:', name, '→ window.' + name);
+                } else if (exists && onWindow) {
+                    console.log('  ✅', name, 'already on window');
+                } else {
+                    console.error('  ❌', name, 'not defined at all');
+                }
+            } catch(e) {
+                console.error('  ❌', name, '— error:', e.message);
+            }
+        }
+        
+        // If GAME exists but didn't init, call init manually
+        if (typeof window.GAME !== 'undefined' && !window.GAME.running) {
+            console.log('🚀 Calling GAME.init() manually...');
+            window.GAME.init();
+        }
+    });
+})();
+</script>
 </body>
 </html>
